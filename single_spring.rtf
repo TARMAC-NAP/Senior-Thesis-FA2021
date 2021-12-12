@@ -1,0 +1,241 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2513
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import numpy as np\
+import matplotlib.pyplot as plt\
+import matplotlib.image as mpimg\
+from matplotlib.pyplot import cm\
+import os\
+import time\
+\
+from sklearn.linear_model import LinearRegression\
+from sklearn import linear_model\
+from sklearn.metrics import mean_squared_error\
+\
+from numpy.random import seed\
+from numpy.random import rand\
+lr = LinearRegression()\
+\
+\
+threshold = 20000\
+\
+pos0   = []\
+pos1   = []\
+pos2   = []\
+pos    = [pos0, pos1, pos2]\
+\
+t      = 0.00 #initial time\
+x0     = rand(1) #array of random values  vvv\
+v0     = rand(1) #initial v?\
+\
+dt_0 = [0.0090, 0.0095, 0.0100]\
+for element in dt_0:  \
+    dt = element #sets dt as either 0.009 or 0.01\
+    print(dt)\
+    \
+    n = np.random.normal(loc=0.0,scale=dt,size=(threshold,1))\
+    x = x0 #this ensures that x and v return to the same rand x0 and v0 with each loop\
+    v = v0\
+    print(x,v)\
+    for i in range(0,threshold): #looping from ith to threshold\
+        t       += dt #time for particular iteration \
+        dv_dt    = -30*x*dt - 5*v*dt + 6*(n[i,0])\
+        x       = x + v*dt #update x and v\
+        v       = v + dv_dt \
+        if dt == dt_0[0]: \
+            pos[0].append(x)\
+        elif dt == 0.0095:\
+            pos[1].append(x)\
+        elif dt == 0.01:\
+            pos[2].append(x)\
+\
+times = np.linspace(0,100000, num=100000)\
+plt.plot(times[:15000], pos0[:15000])\
+plt.show()\
+plt.plot(times[:15000], pos1[:15000])\
+plt.show()\
+plt.plot(times[:15000], pos2[:15000])\
+plt.show()\
+print('done')\
+#should be no issues here. positions are appended to the right lists, and can be indexed successfully\
+#fixed error that was appending the wrong x variable \
+\
+\
+threshold = 3000\
+start = 1000\
+back = 20\
+def mse_pipeline(features, position, predstorage, msestorage):\
+    ''' \
+    requires  features, position, pred_list, mse_list\
+    where features is # of features the data will have,\
+    position is which pos fun (ex. dt = 0.01, dt =  0.005)\
+    predstorage stores preds, msestorage stores mses\
+    '''\
+    X = []\
+    y = []\
+\
+    mse_list = [] #these store preds and mses \
+    pred_list = []\
+    \
+    #reset all lists\
+    for z in range(start, threshold):\
+        if features ==0:\
+            X = np.asarray([[0]])\
+            y = po\
+        else:\
+            X = np.asarray(position[z:-back])\
+    \
+            for x in range(1, features+1):\
+                X = np.column_stack((X, position[z+x:-back+x])) #generation of X\
+                #stacks the position features in the 2nd dimension\
+                if X.shape[1] < 2:\
+                    print('oops!') #will only return a 2d array. for 1 feature, it duplicates the data\
+                    break\
+\
+            y = position[z + X.shape[1] : -back + X.shape[1]] #y (targets) is the next position feature\
+        \
+            model = lr.fit(X, y)\
+        \
+            predictions = model.predict(X) \
+            mse = mean_squared_error(predictions, y)\
+        \
+            pred_list.append(predictions) #adds the prediction for the iteration to the bottom of the list\
+            mse_list.append(mse) #adds the mse for the iteration to the bottom of the list \
+        \
+        predstorage.append(np.asarray(pred_list))\
+        msestorage.append(np.asarray(mse_list))\
+    \
+    #tried inserting as a list, inserting as an array\
+    #this doesn't even work for anything(gives list length 0)\
+\
+\
+\
+\
+preds0 = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+preds1 = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+preds2 = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+mses0  = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+mses1  = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+mses2  = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+\
+feat = 9 #indexes to the end of features\
+\
+\
+# for i in range(1,feat):\
+#     mse_pipeline(i, pos0, preds0[i-1], mses0[i-1])\
+    \
+#     mse_pipeline(i, pos1, preds1[i-1], mses1[i-1])\
+#     mse_pipeline(i, pos2, preds2[i-1], mses2[i-1])\
+#     print(i)\
+#     print(len(preds0[i-1][0]), len(preds1[i-1][0]))\
+    \
+for i in range(0,feat): #testing for 0 features\
+    mse_pipeline(i, pos0, preds0[i], mses0[i])\
+    \
+    mse_pipeline(i, pos1, preds1[i], mses1[i])\
+    mse_pipeline(i, pos2, preds2[i], mses2[i])\
+    print(i)\
+    print(len(preds0[i][0]), len(preds1[i][0]))\
+    \
+    \
+\
+\
+color=iter(cm.rainbow(np.linspace(0,1,back)))\
+\
+for i in range(0,feat-1):\
+    c = next(color)\
+    plt.plot(pos0[start:-back], preds0[i][0][0], label=str(i)+' features', c=c)\
+    plt.plot(pos0[start:-back], pos0[start:-back])\
+    plt.title('preds vs truth for up to '+str(i)+' features for dt = 0.009')\
+plt.legend()\
+plt.show()\
+\
+color = iter(cm.rainbow(np.linspace(0,1,back)))\
+for i in range(0,feat-1):\
+    c = next(color)\
+    plt.plot(pos1[start:-back], preds1[i][0][0], label=str(i)+' features', c=c)\
+    plt.plot(pos1[start:-back], pos1[start:-back])\
+    plt.title('preds vs truth for up to '+str(i)+' features for dt = 0.01')\
+plt.legend()\
+plt.show()\
+\
+\
+color = iter(cm.rainbow(np.linspace(0,1,back)))\
+for i in range(0,feat-1):\
+    c = next(color)\
+    plt.plot(pos2[start:-back], preds2[i][0][0], label=str(i)+' features', c=c)\
+    plt.plot(pos2[start:-back], pos2[start:-back])\
+    plt.title('preds vs truth for up to '+str(i)+' features for dt = 0.01')\
+plt.legend()\
+plt.show()\
+\
+\
+#mean, standard dev for each feature's mses, then plt.errorbar\
+\
+features = []\
+for i in range(0,feat-1):\
+    features.append(i)\
+print(features)\
+average = None\
+\
+averages0 = []\
+averages1 = []\
+averages2 = []\
+std0_l = []\
+std1_l = []\
+std2_l = []\
+#for each i we want the average \
+for i in range(0,feat-1):\
+    \
+    average_i0 = np.asarray(mses0[i][:][:])\
+    average0   = np.mean(average_i0)\
+    averages0.append(average0)\
+\
+\
+    std0 = np.std(averages0)\
+    std0_l.append(std0)\
+\
+plt.scatter(features, averages0, label = 'features (memory) vs. average MSE for del = '+str(dt_0[0]))\
+plt.errorbar(features, averages0, yerr=std0_l)\
+\
+plt.savefig('0-7 features, size 2000, dt=0.0090.png')\
+plt.show()\
+\
+\
+\
+\
+for i in range(0,feat-1):\
+    average_i1 = np.asarray(mses1[i][:][:])\
+    average1 = np.mean(average_i1)\
+    averages1.append(average1)\
+    \
+    std1 = np.std(averages1)\
+    std1_l.append(std1)\
+plt.errorbar(features, averages1, yerr = std1_l)\
+plt.scatter(features, averages1,  label= 'features (memory) vs. average MSE for del = '+str(dt_0[1]))\
+plt.savefig('0-7 features, size 2000, dt=0.0095.png')\
+\
+\
+plt.show()\
+\
+for i in range(0,feat-1):\
+    average_i2 = np.asarray(mses2[i][:][:])\
+    average2 = np.mean(average_i2)\
+    averages2.append(average2)\
+    \
+    std2 = np.std(averages2)\
+    std2_l.append(std2)\
+plt.errorbar(features, averages1, yerr = std2_l)\
+plt.scatter(features, averages1,  label= 'features (memory) vs. average MSE for del = '+str(dt_0[1]))\
+\
+plt.savefig('0-7 features, size 2000, dt=0.0100.png')\
+\
+plt.show()\
+\
+#read thru paper again, check error bars, run thru with more data\
+#put 0 features in \
+}

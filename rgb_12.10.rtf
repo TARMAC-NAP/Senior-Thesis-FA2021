@@ -1,0 +1,227 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2580
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 import numpy as np\
+import matplotlib.pyplot as plt\
+import matplotlib.image as mpimg\
+from matplotlib.pyplot import cm\
+import os\
+import time\
+\
+from sklearn.linear_model import LinearRegression\
+from sklearn import linear_model\
+from sklearn.metrics import mean_squared_error\
+\
+from numpy.random import seed\
+from numpy.random import rand\
+\
+\
+import cv2 as cv\
+\
+iterations = 0\
+frames = [] #empty, will hold R, G, B and timestamps \
+stamps = [] #empty, will hold all the timestamps \
+\
+blue_data = []\
+green_data = []\
+red_data = [] #these lists will store RGB data (testing 11/26). then it will become an array\
+# we need these as lists because we need to append the data to get data from successive frames\
+\
+lr = LinearRegression()\
+\
+print("file exists?", os.path.exists('walk_stabilized_1_720p.mov')) #making sure i have the right file\
+capture = cv.VideoCapture("walk_stabilized_1_720p.mov") #captures the video\
+\
+frame_exists, frame_list = capture.read() # tuple: bool, and arrays\
+print(frame_exists)\
+\
+while frame_exists: #(capture.isOpened()): #iterates while the data exists. if it doesn't, the video is over\
+    frame_exists, frame_list = capture.read() #tuple: bool for 'frame_exists', data in current_frame\
+\
+    B = None\
+    G = None\
+    R = None\
+    RGB = None #trying to reset all the variables - seeing if that helps things! 11/26\
+    \
+    B, G, R = np.dsplit(frame_list, frame_list.shape[-1]) #puts it from BGR to RGB \
+    RGB = [R, G, B]\
+    #frames.append(RGB) OUTDATED 11/26\
+    blue_data.append(B)\
+    green_data.append(G)\
+    red_data.append(R)\
+    \
+    iterations +=1\
+    if iterations >= 1000: #breaks the loop past certain number of frames\
+        print('iterations exceeded threshold')\
+        break \
+\
+print(frame_list.shape)\
+print('true, exists, everything is working. all done!')\
+\
+#video capture works for up to 1000 iterations - as of 11/26/2021 \
+\
+\
+# we had B, G, and R data in the list "frames" as RGB\
+# we're going to take that out and just not append them again so we don't have to split them once again\
+blue_data_ar = np.asarray(blue_data)\
+print(blue_data_ar.shape)\
+green_data_ar = np.asarray(green_data)\
+print(green_data_ar.shape)\
+red_data_ar = np.asarray(red_data) \
+print(red_data_ar.shape)\
+#the RGB data is stored as (height, width, value). There is exactly one value for each positon. \
+#this system with x_ar works - we now have (frame, height, width, value)\
+# this should facilitate our pipeline translation process!\
+\
+\
+threshold = 500\
+back = 50\
+start = 0\
+\
+\
+def mse_pipeline_RGBTEST_11_26_2021(features, color, predstorage, msestorage):\
+    ''' requires the definition/specification of features,\
+    color of the data, the storage lists for prediction and mse'''\
+    X = []\
+    y = []\
+    \
+    h_start = 400\
+    h_end = 405\
+    w_start = 400\
+    w_end = 405\
+    \
+    mse_list = []\
+    pred_list = []\
+\
+    for z in range(start, threshold):\
+        for h in range(h_start,h_end+1): # h and w loops through selected section of pixels\
+            for w in range(w_start, w_end+1): #scrolls thru from bottom to top, l to r\
+#                 if features == 0:\
+#                     X = np.asarray([[0]])\
+#                 else:\
+                X = np.asarray(color[z:-back,h,w,:])\
+                for x in range(1,features+1):\
+                    X = np.column_stack((X, color[z+x:-back+x,h,w,:]))\
+#                     if X.shape[1]<2:\
+#                         print('oops! didn\\'t stack right!')\
+#                         break\
+                y = color[z + X.shape[1] : -back + X.shape[1],h,w,:]\
+\
+                model = lr.fit(X,y)\
+                predictions = model.predict(X)\
+                mse = mean_squared_error(predictions,y)\
+                \
+                pred_list.append(predictions)\
+                mse_list.append(mse)\
+            \
+        predstorage.append(pred_list)\
+        msestorage.append(mse_list)\
+\
+\
+r_pred = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+g_pred = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+b_pred = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+\
+r_mse = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+g_mse = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+b_mse = [[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[],[]]\
+\
+feat = 25\
+\
+for i in range(1,feat):\
+    mse_pipeline_RGBTEST_11_26_2021(i, red_data_ar, r_pred[i-1], r_mse[i-1])\
+    mse_pipeline_RGBTEST_11_26_2021(i, green_data_ar, g_pred[i-1], g_mse[i-1])\
+    mse_pipeline_RGBTEST_11_26_2021(i, blue_data_ar, b_pred[i-1], b_mse[i-1])\
+    print(i)\
+\
+feat_start = 1\
+print(type(r_mse))\
+red_mse = np.asarray(r_mse)\
+print(type(red_mse))\
+print(red_mse.shape)\
+\
+red_mse_asarrays = []\
+for i in range(1,feat):\
+    red_mse_asarrays.append(np.asarray(red_mse[i]))\
+mse_r = np.asarray(red_mse_asarrays)\
+#print('red check',mse_r[9].shape)\
+\
+green_mse = np.asarray(g_mse)\
+print(type(green_mse))\
+print(green_mse.shape)\
+green_mse_asarrays = []\
+for i in range(1,feat):\
+    green_mse_asarrays.append(np.asarray(green_mse[i]))\
+mse_g = np.asarray(green_mse_asarrays)\
+\
+blue_mse = np.asarray(b_mse)\
+blue_mse_asarrays = []\
+for i in range(1,feat):\
+    blue_mse_asarrays.append(np.asarray(blue_mse[i]))\
+mse_b = np.asarray(blue_mse_asarrays)\
+\
+features = []\
+\
+for i in range(1,feat-1):\
+    features.append(i)\
+print(len(features))\
+\
+averagesr = []\
+averager = []\
+averagesr = []\
+stdr_l = []\
+\
+for i in range(1,feat-1):\
+\
+    averager = np.mean(mse_r[:][i]) #averages the array of prediction values\
+    averagesr.append(averager) #makes a list of the prediction data for # of feats\
+    \
+    stdr = np.std(mse_r[:][i]) #standard deviation between all the averages for feats\
+    stdr_l.append(stdr) #list of standard deviations\
+\
+plt.errorbar(features, averagesr, yerr=stdr_l)\
+plt.scatter(features, averagesr, label = 'features vs average MSE for r data')\
+plt.savefig('r features vs mse')\
+plt.show()\
+\
+\
+averagesg = []\
+averageg = []\
+averagesg = []\
+stdg_l = []\
+\
+for i in range(1,feat-1):   \
+    averageg = np.mean(mse_g[:][i]) #averages the array of prediction values\
+    averagesg.append(averageg) #makes a list of the prediction data for # of feats\
+\
+    stdg = np.std(mse_g[:][i]) #standard deviation between all the averages for feats\
+    stdg_l.append(stdg) #list of standard deviations\
+\
+plt.errorbar(features, averagesg, yerr=stdg_l)\
+plt.scatter(features, averagesg, label = 'features vs average MSE for g data')\
+plt.show()\
+\
+averagesb = []\
+averageb = []\
+averagesb = []\
+stdb_l = []\
+\
+for i in range(1,feat-1):\
+\
+    averageb = np.mean(mse_b[:][i]) #averages the array of prediction values\
+    averagesb.append(averageb) #makes a list of the prediction data for # of feats\
+\
+    stdb = np.std(mse_b[:][i]) #standard deviation between all the averages for feats\
+    stdb_l.append(stdb) #list of standard deviations\
+\
+plt.errorbar(features,averagesb, yerr=stdb_l)\
+plt.scatter(features, averagesb, label = 'features vs average MSE for b data')\
+plt.show()\
+\
+\
+\
+}
